@@ -1,0 +1,76 @@
+COPY (SELECT 
+		RIDEABLE_TYPE,
+		START_STATION_NAME,
+		MEMBER_CASUAL,
+		STARTED_DATE
+	FROM DIVVY_TRIPDATA_2023) TO 'D:\project\output\trend_data.csv' WITH CSV HEADER;
+-- Calculate Average, Maximum, and Minimum Ride Length for Each Member Type
+SELECT 
+    MEMBER_CASUAL,
+    CONCAT(
+        FLOOR(AVG(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) / 1440), ' days ',
+        TO_CHAR(INTERVAL '1 minute' * (AVG(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) % 1440), 'MI'), 
+        CASE 
+            WHEN (AVG(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) % 1440) != 1 THEN ' minutes' 
+            ELSE ' minute' 
+        END
+    ) AS "Average Ride Length",
+    CONCAT(
+        FLOOR(MAX(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) / 1440), ' days ',
+        TO_CHAR(INTERVAL '1 minute' * (MAX(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) % 1440), 'MI'), 
+        CASE 
+            WHEN (MAX(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) % 1440) != 1 THEN ' minutes' 
+            ELSE ' minute' 
+        END
+    ) AS "Max Ride Length",
+    CONCAT(
+        FLOOR(MIN(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) / 1440), ' days ',
+        TO_CHAR(INTERVAL '1 minute' * (MIN(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) % 1440), 'MI'), 
+        CASE 
+            WHEN (MIN(EXTRACT(EPOCH FROM RIDE_LENGTH)::int / 60.0) % 1440) != 1 THEN ' minutes' 
+            ELSE ' minute' 
+        END
+    ) AS "Min Ride Length"
+FROM 
+    DIVVY_TRIPDATA_2023
+GROUP BY 
+    MEMBER_CASUAL;
+
+
+-- Number of rides by member type and day of week
+SELECT member_casual, day_of_week, COUNT(RIDE_ID) AS TOTAL_RIDE
+FROM DIVVY_TRIPDATA_2023
+GROUP BY member_casual, day_of_week
+ORDER BY TOTAL_RIDE
+
+-- 
+SELECT
+	TO_CHAR(STARTED_AT, 'Mon') AS month_name,
+	MEMBER_CASUAL,
+	RIDEABLE_TYPE,
+	DAY_OF_WEEK,
+	COUNT(RIDE_ID) AS TOTAL
+FROM DIVVY_TRIPDATA_2023
+GROUP BY 1, 2, 3, 4, EXTRACT(MONTH FROM STARTED_AT), EXTRACT(DAY FROM STARTED_AT)
+ORDER BY EXTRACT(MONTH FROM STARTED_AT) ASC, EXTRACT(DAY FROM STARTED_AT) ASC
+
+--Popular start location
+SELECT 
+	START_STATION_NAME,
+	COUNT(RIDE_ID) AS TOTAL
+FROM 
+	DIVVY_TRIPDATA_2023
+WHERE 
+	START_STATION_NAME IS NOT NULL 
+GROUP BY 1
+ORDER BY TOTAL DESC
+LIMIT 10
+--
+SELECT
+	MEMBER_CASUAL,
+	COUNT(RIDE_ID)
+FROM DIVVY_TRIPDATA_2023
+GROUP BY 1, EXTRACT(MONTH FROM STARTED_AT)
+
+
+
